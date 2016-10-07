@@ -19,8 +19,9 @@ pub fn hamming_distance(strands1: &str, strands2: &str) -> Result<u32, &'static 
     // //#FOR way
     // let mut distance: u32 = 0;
 
+    // let chars2 = strands2.chars().collect::<Vec<_>>();
     // for (i, c) in strands1.chars().enumerate() {
-    //     if c != strands2.chars().nth(i).unwrap() {
+    //     if c != chars2[i] {
     //         distance += 1;
     //     }
     // }
