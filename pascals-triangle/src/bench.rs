@@ -92,6 +92,44 @@ impl PascalsTriangle4 {
     }
 }
 
+pub struct PascalsTriangle5 {
+    row_count: u32
+}
+
+impl PascalsTriangle5 {
+    pub fn new(row_count: u32) -> Self {
+        PascalsTriangle5 {
+            row_count: row_count
+        }
+    }
+
+    pub fn rows(&self) -> Vec<Vec<u32>> {
+        PascalsTriangle5::recursive(self.row_count)
+    }
+
+    fn recursive(row: u32) -> Vec<Vec<u32>> {
+        match row {
+            0 => vec![],
+            1 => vec![vec![1]],
+            _ => {
+                let mut partial = Vec::<u32>::with_capacity(row as usize);
+                let mut result = PascalsTriangle5::recursive(row -1);
+                {
+                    let last_row = &result[result.len() - 1];
+                    for i in std::iter::once(1)
+                        .chain(last_row.windows(2).map(|w| w.iter().sum()))
+                        .chain(std::iter::once(1)) {
+                        partial.push(i)
+                    }
+                }
+
+                result.push(partial);
+                result
+            }
+        }
+
+    }
+}
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -115,6 +153,11 @@ mod tests {
     #[bench]
     fn PascalsTriangle_danilo(b: &mut Bencher) {
         let p = PascalsTriangle4::new(10);
+        b.iter(|| p.rows());
+    }
+    #[bench]
+    fn PascalsTriangle_danilo2(b: &mut Bencher) {
+        let p = PascalsTriangle5::new(10);
         b.iter(|| p.rows());
     }
 }
