@@ -10,7 +10,7 @@ pub fn reply(question: &str) -> &str {
 
     for pair in constraints.into_iter() {
         if Regex::new(pair.0).unwrap().is_match(question) {
-            return pair.1
+            return pair.1;
         }
     }
 
