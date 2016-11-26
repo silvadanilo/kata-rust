@@ -1,115 +1,64 @@
-use std::collections::HashMap;
+#![feature(test)]
 
-#[derive(Debug)]
-struct Matrix {
-    matrix: HashMap<usize, Vec<usize>>,
-}
+type Stone = (usize, usize);
 
-impl Matrix {
-    pub fn from(input: &Vec<(usize, usize)>) -> Self {
-        let mut matrix = HashMap::new();
-        for &(a, b) in input.iter() {
-            matrix.entry(a).or_insert(Vec::new()).push(b);
-            matrix.get_mut(&a).unwrap().sort();
-            matrix.entry(b).or_insert(Vec::new()).push(a);
-            matrix.get_mut(&b).unwrap().sort();
-        }
-
-        Matrix { matrix: matrix }
+pub fn sort(head: usize, tail: usize, stones: &[Stone]) -> Option<Vec<Stone>> {
+    if stones.is_empty() {
+        return Some(Vec::new());
     }
 
-    pub fn sort_stones(&self, first: usize) -> Option<Vec<(usize, usize)>> {
-        if self.is_empty() {
-            return None;
-        }
-
-        for i in self.matrix.get(&first).unwrap().iter() {
-            let cloned_matrix = &self.remove((first, *i));
-
-            if cloned_matrix.is_empty() {
-                return Some(vec![(first, *i)]);
+    for (i, &stone) in stones.iter().enumerate() {
+        let next_stone = match tail {
+            x if x == stone.0 => stone,
+            x if x == stone.1 => (stone.1, stone.0),
+            _ => {
+                continue;
             }
+        };
 
-            let res = cloned_matrix.sort_stones(*i);
-            match res {
-                Some(mut x) => {
-                    x.insert(0, (first, *i));
-                    return Some(x);
-                }
-                None => {
-                    continue;
-                }
-            };
+        let mut stones = stones.to_vec();
+        stones.remove(i);
+        match sort(head, next_stone.1, &stones) {
+            Some(mut x) => {
+                x.insert(0, next_stone);
+                return Some(x);
+            }
+            None => {}
         }
-
-        return None;
     }
 
-    fn remove(&self, stone: (usize, usize)) -> Self {
-        let mut new_matrix = self.matrix.clone();
-
-        let (a, b) = stone;
-        {
-            let mut row = new_matrix.get_mut(&a).unwrap();
-            let index_to_remove = row.binary_search(&b).unwrap();
-            row.remove(index_to_remove);
-        }
-
-        {
-            let mut row = new_matrix.get_mut(&b).unwrap();
-            let index_to_remove = row.binary_search(&a).unwrap();
-            row.remove(index_to_remove);
-        }
-
-        Matrix { matrix: new_matrix }
-    }
-
-    fn is_empty(&self) -> bool {
-        self.matrix.iter().all(|(_, set)| set.is_empty())
-    }
+    None
 }
 
-pub fn chain(input: &Vec<(usize, usize)>) -> Option<Vec<(usize, usize)>> {
-    if input.is_empty() {
+pub fn chain(stones: &Vec<Stone>) -> Option<Vec<Stone>> {
+    if stones.is_empty() {
         return Some(vec![]);
     }
 
-    let matrix = Matrix::from(input);
-    matrix.sort_stones(input.first().unwrap().0).and_then(|res| {
-        if res.first().unwrap().0 == res.last().unwrap().1 {
-            Some(res)
-        } else {
-            None
-        }
-    })
+    let first = stones[0];
+    sort(first.0, first.1, &stones[1..])
+        .map(|mut x| {
+            x.insert(0, first);
+            x
+        })
+        .and_then(|x| {
+            if x[0].0 != x.last().unwrap().1 {
+                None
+            } else {
+                Some(x)
+            }
+        })
 }
 
+extern crate test;
 #[cfg(test)]
 mod tests {
-    use super::Matrix;
-    // use super::remove_from_matrix;
-    // use super::prova;
-    use std::collections::HashMap;
+    use test::Bencher;
+    use super::*;
 
-    #[test]
-    fn make_matrix_correctly() {
-        let mut expected = HashMap::with_capacity(3);
-        expected.insert(1, vec![2]);
-        expected.insert(2, vec![1, 3]);
-        expected.insert(3, vec![2]);
-
-        assert_eq!(expected, (Matrix::from(&vec![(1, 2), (2, 3)])).matrix);
-    }
-
-    #[test]
-    fn remove_from_matrix_also_remove_element_if_remaining_count_is_zero() {
-        let mut expected = HashMap::with_capacity(3);
-        expected.insert(1, vec![]);
-        expected.insert(2, vec![3]);
-        expected.insert(3, vec![2]);
-
-        let matrix = Matrix::from(&vec![(1, 2), (2, 3)]);
-        let new_matrix = matrix.remove((1, 2));
-        assert_eq!(expected, new_matrix.matrix);
+    #[bench]
+    fn bench_chain(b: &mut Bencher) {
+        let input = vec![(1, 2), (5, 3), (3, 1), (1, 2), (2, 4), (1, 6), (2, 3), (3, 4), (5, 6)];
+        b.iter(|| chain(&input));
     }
 }
